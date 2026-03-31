@@ -1,91 +1,86 @@
-const users = require('../models/userModel')
-const { v4: uuidv4 } = require('uuid')
+// const users = require('../models/userModel')
+// const { v4: uuidv4 } = require('uuid')
 const { isValidEmail } = require('../utils/validate')
+const User = require('../models/User');
 
-//users naam ka databse hai
-//uuid unique ids generate karega
-// email wala email validation karega
+exports.createUser = async (req, res) => {
+    try {
+        const { name, email, age } = req.body;
 
-// Creating new user
-// exports.createUser = (req, res) => {
-//     const { name, email, age } = req.body;
-//     if ((!name || !email || !age) || (!isValidEmail(email))) {
-//         console.log("Wrong data eneterd for new user");
-//         return res.send(400).json({ message: "Please fill the data correctly" })
-//     }
-//     const id = uuidv4();
-//     users[id] = { id, name, email, age };
-//     res.status(201).json({ message: "New user registered", info: { id, name, email, age } })
-// }
+        if (!name || !email || !age) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
 
-// CREATE USER
-exports.createUser = (req, res) => {
-const { name, email, age } = req.body;
-if (!name || !email || !age) {
-    return res.status(400).json({ message: 'All fields are required' });
-}
-if (!isValidEmail(email)) {
-    return res.status(400).json({ message: 'Invalid email format' });
-}
-    const id = uuidv4();
-    users[id] = { id, name, email, age };
-    res.status(201).json(users[id]);
+        const user = await User.create({ name, email, age });
+
+        res.status(201).json(user);
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
-
-// GET ALL USERS
-// exports.getAllUsers = (req, res) => {
-//     res.status(200).json(Object.values(users));
-// };
 
 
 // fetching all users
-exports.getAllUsers = (req, res) => {
-    res.status(200).json(users)
-}
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find();
 
-// GET SINGLE USER
-exports.getUserById = (req, res) => {
-    const user = users[req.params.id];
+        res.status(200).json(users);
 
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
+};
 
-    res.status(200).json(user);
+// get a single user by id
+exports.getUserById = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json(user);
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 // UPDATE USER
-exports.updateUser = (req, res) => {
-    const { name, email, age } = req.body;
-    const user = users[req.params.id];
+exports.updateUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
 
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json(user);
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    if (email && !isValidEmail(email)) {
-        return res.status(400).json({ message: 'Invalid email format' });
-    }
-
-    users[req.params.id] = {
-        ...user,
-        name: name || user.name,
-        email: email || user.email,
-        age: age || user.age,
-    };
-
-    res.status(200).json(users[req.params.id]);
 };
 
 // DELETE USER
-exports.deleteUser = (req, res) => {
-    const user = users[req.params.id];
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
 
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'User deleted successfully' });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    delete users[req.params.id];
-
-    res.status(200).json({ message: 'User deleted successfully' });
 };
